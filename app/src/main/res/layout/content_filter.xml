@@ -49,7 +49,7 @@
                 android:layout_width="0dp"
                 android:layout_weight="6"
                 android:layout_height="wrap_content"
-                android:hint="begin date"
+                android:entries="@array/sort_order_array"
                 />
         </TableRow>
 
@@ -68,15 +68,17 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 >
-                <CheckBox
+                <CheckBox android:id="@+id/cbArts"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Arts"/>
-                <CheckBox
+
+                <CheckBox android:id="@+id/cbFashion"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Fashion &nbsp; Style"/>
-                <CheckBox
+                    android:text="Fashion &amp; Style"/>
+
+                <CheckBox android:id="@+id/cbSports"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Sports"/>

@@ -5,4 +5,9 @@
     <string name="search_button">Search</string>
     <string name="title_activity_article">ArticleActivity</string>
     <string name="title_activity_filter">FilterActivity</string>
+
+    <string-array name="sort_order_array">
+        <item>Oldest</item>
+        <item>Newest</item>
+    </string-array>
 </resources>
