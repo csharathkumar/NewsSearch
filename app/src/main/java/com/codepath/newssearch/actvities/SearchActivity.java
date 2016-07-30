@@ -5,12 +5,15 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
@@ -30,19 +33,29 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.UnsupportedEncodingException;
 import java.lang.ref.WeakReference;
+import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.List;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import cz.msebera.android.httpclient.Header;
 
-public class SearchActivity extends AppCompatActivity {
+public class SearchActivity extends AppCompatActivity implements AbsListView.OnScrollListener {
     public static final String EXTRA_SEARCH_MODEL = "search_criteria_model";
     public static final int GET_SEARCH_CRITERIA_REQUEST = 121;
     public static final String TAG = SearchActivity.class.getSimpleName();
 
-    EditText etQuery;
-    GridView gvResults;
-    Button btnSearch;
+    int mTotalResults;
+    int mCurrentPage;
+
+    @BindView(R.id.etQuery) EditText etQuery;
+    @BindView(R.id.gvResults) GridView gvResults;
+    @BindView(R.id.btnSearch) Button btnSearch;
+    @BindView(R.id.toolbar) Toolbar toolbar;
+    String mQuery;
 
     ArrayList<Article> articles;
     ArticleArrayAdapter articleArrayAdapter;
@@ -52,20 +65,22 @@ public class SearchActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_search);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        ButterKnife.bind(this);
+        //Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        getSupportActionBar().setTitle(R.string.app_name);
         setUpViews();
 
     }
 
     public void setUpViews(){
-        etQuery = (EditText) findViewById(R.id.etQuery);
+        /*etQuery = (EditText) findViewById(R.id.etQuery);
         gvResults = (GridView) findViewById(R.id.gvResults);
-        btnSearch = (Button) findViewById(R.id.btnSearch);
+        btnSearch = (Button) findViewById(R.id.btnSearch);*/
         articles = new ArrayList<>();
         articleArrayAdapter = new ArticleArrayAdapter(this,articles);
         gvResults.setAdapter(articleArrayAdapter);
-
+        //gvResults.setOnScrollListener(this);
         gvResults.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -74,7 +89,7 @@ public class SearchActivity extends AppCompatActivity {
                 //get article to display
                 Article article = (Article) parent.getItemAtPosition(position);
                 //pass article into intent
-                intent.putExtra("url",article.getWebUrl());
+                intent.putExtra(ArticleActivity.EXTRA_ARTICLE,article);
                 //launch the activity
                 startActivity(intent);
             }
@@ -94,6 +109,28 @@ public class SearchActivity extends AppCompatActivity {
                 return true;
             }
         });
+        final MenuItem searchItem = menu.findItem(R.id.action_search);
+        final SearchView searchView = (SearchView) MenuItemCompat.getActionView(searchItem);
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                // perform query here
+
+                // workaround to avoid issues with some emulators and keyboard devices firing twice if a keyboard enter is used
+                // see https://code.google.com/p/android/issues/detail?id=24599
+                searchView.clearFocus();
+                searchItem.collapseActionView();
+                mQuery = query;
+                sendRequest(0,query);
+                return true;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                return false;
+            }
+        });
+
         return true;
     }
 
@@ -110,22 +147,33 @@ public class SearchActivity extends AppCompatActivity {
     }
 
     public void onArticleSearch(View view) {
-        String query = etQuery.getText().toString();
-        //Toast.makeText(this,"Search Query entered is - "+query,Toast.LENGTH_SHORT).show();
+        mQuery = etQuery.getText().toString();
+        sendRequest(0,mQuery);
+    }
+    private void sendRequest(final int pageNumber, String query){
+        mCurrentPage = pageNumber;
+        //String query = etQuery.getText().toString();
         AsyncHttpClient client = new AsyncHttpClient();
         String url = Constants.BASE_URL;
         RequestParams params = new RequestParams();
         params.put("api-key",Constants.API_KEY);
-        params.put("page",0);
+        params.put("page",pageNumber);
         params.put("q",query);
         if(mSearchModel != null){
             params.put("begin_date",mSearchModel.getBeginDate());
-            if(mSearchModel.getCategories() != null && !mSearchModel.getCategories().isEmpty()){
-                String categories = "";
-                for(String string : mSearchModel.getCategories()){
-                    categories = categories+'"'+string+'"';
+            List<String> categoriesList = mSearchModel.getCategories();
+            if(!categoriesList.isEmpty()){
+                String categories = "news_desk:(";
+                for(int i=0;i<categoriesList.size()-1;i++){
+                    categories = categories+'"'+categoriesList.get(i)+'"'+" ";
                 }
-                
+                categories = categories+'"'+categoriesList.get(categoriesList.size()-1)+'"'+")";
+                try {
+                    params.put("fq", URLEncoder.encode(categories,"utf-8"));
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                }
+
             }
             params.put("sort",mSearchModel.getSortOrder());
         }
@@ -138,6 +186,12 @@ public class SearchActivity extends AppCompatActivity {
                 JSONArray articleJsonResults = null;
                 try{
                     articleJsonResults = response.getJSONObject("response").getJSONArray("docs");
+                    JSONObject metaJsonObject = response.getJSONObject("response").getJSONObject("meta");
+                    mTotalResults = Integer.parseInt(metaJsonObject.getString("hits"));
+                    Log.d(TAG,"Total results is - "+mTotalResults);
+                    if(pageNumber == 0){
+                        articles.clear();
+                    }
                     articles.addAll(Article.fromJSONArray(articleJsonResults));
                     articleArrayAdapter.notifyDataSetChanged();
                 }catch(JSONException e){
@@ -147,9 +201,24 @@ public class SearchActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
-                super.onFailure(statusCode, headers, throwable, errorResponse);
+                Log.e(TAG,"Error response received - ");
             }
         });
+    }
+    @Override
+    public void onScrollStateChanged(AbsListView view, int scrollState) {
 
+    }
+
+    @Override
+    public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+        Log.d(TAG,"In onScroll method");
+        Log.d(TAG,"First visible item - "+firstVisibleItem);
+        Log.d(TAG,"Visible Item count - "+visibleItemCount);
+        Log.d(TAG,"Total item count - "+totalItemCount);
+        if(visibleItemCount != 0 && (totalItemCount == (firstVisibleItem + visibleItemCount))){
+            Log.d(TAG,"Condition is met");
+            sendRequest(totalItemCount/10,mQuery);
+        }
     }
 }

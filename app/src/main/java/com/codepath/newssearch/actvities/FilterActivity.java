@@ -8,6 +8,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -24,13 +25,22 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+
 public class FilterActivity extends AppCompatActivity implements DatePickerDialog.OnDateSetListener{
 
+    @BindView(R.id.sortOrderSpinner)
     Spinner spinnerSortOrder;
+    @BindView(R.id.etBeginDate)
     EditText etBeginDate;
+    @BindView(R.id.cbArts)
     CheckBox cbArts;
+    @BindView(R.id.cbFashion)
     CheckBox cbFashion;
+    @BindView(R.id.cbSports)
     CheckBox cbSports;
+    @BindView(R.id.btnSave)
     Button btnSave;
 
     String beginDateSelected = "";
@@ -38,15 +48,11 @@ public class FilterActivity extends AppCompatActivity implements DatePickerDialo
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_filter);
+        ButterKnife.bind(this);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
-        spinnerSortOrder = (Spinner) findViewById(R.id.sortOrderSpinner);
-        etBeginDate = (EditText) findViewById(R.id.etBeginDate);
-        cbArts = (CheckBox) findViewById(R.id.cbArts);
-        cbFashion = (CheckBox) findViewById(R.id.cbFashion);
-        cbSports = (CheckBox) findViewById(R.id.cbSports);
-        btnSave = (Button) findViewById(R.id.btnSave);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setTitle("Select Filters");
 
         etBeginDate.setActivated(false);
         etBeginDate.setOnClickListener(new View.OnClickListener() {
@@ -66,6 +72,15 @@ public class FilterActivity extends AppCompatActivity implements DatePickerDialo
             }
         });
     }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if(item.getItemId() == android.R.id.home){
+            finish();
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
     private SearchModel getSearchModel(){
         SearchModel searchModel = new SearchModel();
         if(etBeginDate.getText().toString().length() > 0){
@@ -73,13 +88,13 @@ public class FilterActivity extends AppCompatActivity implements DatePickerDialo
         }
         searchModel.setSortOrder(spinnerSortOrder.getSelectedItem().toString());
         List<String> categories = new ArrayList<>();
-        if(cbArts.isSelected()){
+        if(cbArts.isChecked()){
             categories.add(cbArts.getText().toString());
         }
-        if(cbFashion.isSelected()){
+        if(cbFashion.isChecked()){
             categories.add(cbFashion.getText().toString());
         }
-        if(cbSports.isSelected()){
+        if(cbSports.isChecked()){
             categories.add(cbSports.getText().toString());
         }
         searchModel.setCategories(categories);

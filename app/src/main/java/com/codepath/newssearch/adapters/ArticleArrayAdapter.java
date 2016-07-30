@@ -9,6 +9,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
 import com.codepath.newssearch.R;
 import com.codepath.newssearch.models.Article;
 import com.squareup.picasso.Picasso;
@@ -47,8 +48,10 @@ public class ArticleArrayAdapter extends ArrayAdapter<Article> {
                     .placeholder(R.mipmap.ic_launcher)
                     .into(articleViewHolder.ivImage);*/
         }else{
-            Picasso.with(getContext())
+            Glide.with(getContext())
                     .load(article.getThumbNail())
+                    .override(75,75)
+                    .centerCrop()
                     .placeholder(R.mipmap.ic_launcher)
                     .into(articleViewHolder.ivImage);
         }
