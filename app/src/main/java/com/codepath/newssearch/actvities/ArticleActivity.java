@@ -1,11 +1,15 @@
 package com.codepath.newssearch.actvities;
 
+import android.content.Intent;
 import android.databinding.DataBindingUtil;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.ShareActionProvider;
 import android.support.v7.widget.Toolbar;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.webkit.WebView;
@@ -34,7 +38,7 @@ public class ArticleActivity extends AppCompatActivity {
 
         final Article article = getIntent().getParcelableExtra(EXTRA_ARTICLE);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setTitle(article.getHeadline());
+        getSupportActionBar().setTitle(article.getHeadline().getMain());
         wvArticle.setWebViewClient(new WebViewClient(){
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
@@ -43,6 +47,24 @@ public class ArticleActivity extends AppCompatActivity {
             }
         });
         wvArticle.loadUrl(article.getWebUrl());
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate menu resource file.
+        getMenuInflater().inflate(R.menu.activity_article, menu);
+        // Locate MenuItem with ShareActionProvider
+        MenuItem item = menu.findItem(R.id.menu_item_share);
+        // Fetch reference to the share action provider
+        ShareActionProvider miShareAction = (ShareActionProvider) MenuItemCompat.getActionProvider(item);
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        // pass in the URL currently being used by the WebView
+        shareIntent.putExtra(Intent.EXTRA_TEXT, wvArticle.getUrl());
+
+        miShareAction.setShareIntent(shareIntent);
+
+        return true;
     }
 
     @Override

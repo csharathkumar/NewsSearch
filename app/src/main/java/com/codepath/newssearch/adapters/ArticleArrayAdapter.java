@@ -2,6 +2,7 @@ package com.codepath.newssearch.adapters;
 
 import android.content.Context;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,6 +13,8 @@ import android.widget.TextView;
 import com.bumptech.glide.Glide;
 import com.codepath.newssearch.R;
 import com.codepath.newssearch.models.Article;
+import com.codepath.newssearch.models.Multimedia;
+import com.codepath.newssearch.util.Constants;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
@@ -20,6 +23,8 @@ import java.util.ArrayList;
  * Created by Sharath on 7/26/16.
  */
 public class ArticleArrayAdapter extends ArrayAdapter<Article> {
+    private static final String TAG = ArticleArrayAdapter.class.getSimpleName();
+
     public ArticleArrayAdapter(Context context, ArrayList<Article> articles){
         super(context, R.layout.item_article,articles);
     }
@@ -40,22 +45,16 @@ public class ArticleArrayAdapter extends ArrayAdapter<Article> {
             articleViewHolder = (ArticleViewHolder) convertView.getTag();
         }
 
-        articleViewHolder.tvTitle.setText(article.getHeadline());
+        articleViewHolder.tvTitle.setText(article.getHeadline().getMain());
         articleViewHolder.ivImage.setImageResource(0);
-        if(TextUtils.isEmpty(article.getThumbNail())){
-            /*Picasso.with(getContext())
-                    .load(article.getThumbNail())
-                    .placeholder(R.mipmap.ic_launcher)
-                    .into(articleViewHolder.ivImage);*/
-        }else{
+        if(article.getMultimedia() != null && !article.getMultimedia().isEmpty()){
             Glide.with(getContext())
-                    .load(article.getThumbNail())
+                    .load(Constants.NY_TIMES_BASE_URL+article.getMultimedia().get(0).getUrl())
                     .override(75,75)
                     .centerCrop()
                     .placeholder(R.mipmap.ic_launcher)
                     .into(articleViewHolder.ivImage);
         }
-
         return convertView;
     }
 

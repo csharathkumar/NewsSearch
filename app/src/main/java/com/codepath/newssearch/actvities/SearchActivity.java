@@ -22,9 +22,15 @@ import android.widget.Toast;
 
 import com.codepath.newssearch.R;
 import com.codepath.newssearch.adapters.ArticleArrayAdapter;
+import com.codepath.newssearch.fragments.FilterDialogFragment;
 import com.codepath.newssearch.models.Article;
+import com.codepath.newssearch.models.ResponseWrapper;
 import com.codepath.newssearch.models.SearchModel;
+import com.codepath.newssearch.models.SearchResultsResponse;
+import com.codepath.newssearch.net.ApiClient;
+import com.codepath.newssearch.net.ApiInterface;
 import com.codepath.newssearch.util.Constants;
+import com.codepath.newssearch.util.EndlessScrollListener;
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.JsonHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
@@ -42,8 +48,11 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import cz.msebera.android.httpclient.Header;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
-public class SearchActivity extends AppCompatActivity implements AbsListView.OnScrollListener {
+public class SearchActivity extends AppCompatActivity implements AbsListView.OnScrollListener, FilterDialogFragment.FilterFragmentListener {
     public static final String EXTRA_SEARCH_MODEL = "search_criteria_model";
     public static final int GET_SEARCH_CRITERIA_REQUEST = 121;
     public static final String TAG = SearchActivity.class.getSimpleName();
@@ -70,17 +79,25 @@ public class SearchActivity extends AppCompatActivity implements AbsListView.OnS
         setSupportActionBar(toolbar);
         getSupportActionBar().setTitle(R.string.app_name);
         setUpViews();
-
+        etQuery.setText("android");
     }
 
     public void setUpViews(){
-        /*etQuery = (EditText) findViewById(R.id.etQuery);
-        gvResults = (GridView) findViewById(R.id.gvResults);
-        btnSearch = (Button) findViewById(R.id.btnSearch);*/
+
         articles = new ArrayList<>();
         articleArrayAdapter = new ArticleArrayAdapter(this,articles);
         gvResults.setAdapter(articleArrayAdapter);
         //gvResults.setOnScrollListener(this);
+        gvResults.setOnScrollListener(new EndlessScrollListener() {
+            @Override
+            public boolean onLoadMore(int page, int totalItemsCount) {
+                // Triggered only when new data needs to be appended to the list
+                // Add whatever code is needed to append new items to your AdapterView
+                sendRequestUsingRetrofit(page,mQuery);
+                // or customLoadMoreDataFromApi(totalItemsCount);
+                return true; // ONLY if more data is actually being loaded; false otherwise.
+                }
+        });
         gvResults.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -103,9 +120,12 @@ public class SearchActivity extends AppCompatActivity implements AbsListView.OnS
         filterItem.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
             @Override
             public boolean onMenuItemClick(MenuItem item) {
-                Toast.makeText(getApplicationContext(),"Filter item clicked",Toast.LENGTH_SHORT).show();
+                /*Toast.makeText(getApplicationContext(),"Filter item clicked",Toast.LENGTH_SHORT).show();
                 Intent intent = new Intent(getApplicationContext(),FilterActivity.class);
-                startActivityForResult(intent,GET_SEARCH_CRITERIA_REQUEST);
+                startActivityForResult(intent,GET_SEARCH_CRITERIA_REQUEST);*/
+                //Call the filter dialog
+                FilterDialogFragment filterDialogFragment = FilterDialogFragment.newInstance();
+                filterDialogFragment.show(getSupportFragmentManager(),"Filter Dialog");
                 return true;
             }
         });
@@ -121,7 +141,7 @@ public class SearchActivity extends AppCompatActivity implements AbsListView.OnS
                 searchView.clearFocus();
                 searchItem.collapseActionView();
                 mQuery = query;
-                sendRequest(0,query);
+                sendRequestUsingRetrofit(0,query);
                 return true;
             }
 
@@ -148,7 +168,49 @@ public class SearchActivity extends AppCompatActivity implements AbsListView.OnS
 
     public void onArticleSearch(View view) {
         mQuery = etQuery.getText().toString();
-        sendRequest(0,mQuery);
+        sendRequestUsingRetrofit(0,mQuery);
+    }
+    private void sendRequestUsingRetrofit(final int pageNumber, String query){
+        String beginDate = null;
+        String categories = null;
+        String sortOrder = null;
+        if(mSearchModel != null){
+            if(mSearchModel.getBeginDate() != null){
+                beginDate = mSearchModel.getBeginDate();
+            }
+            if(mSearchModel.getSortOrder() != null){
+                sortOrder = mSearchModel.getSortOrder();
+            }
+            List<String> categoriesList = mSearchModel.getCategories();
+            if(!categoriesList.isEmpty()){
+                categories = "news_desk:(";
+                for(int i=0;i<categoriesList.size()-1;i++){
+                    categories = categories+'"'+categoriesList.get(i)+'"'+" ";
+                }
+                categories = categories+'"'+categoriesList.get(categoriesList.size()-1)+'"'+")";
+            }
+        }
+        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+        Call<ResponseWrapper> searchResultsResponseCall =
+                apiInterface.getArticles(Constants.API_KEY,query,String.valueOf(pageNumber),sortOrder,beginDate,categories);
+        searchResultsResponseCall.enqueue(new Callback<ResponseWrapper>() {
+            @Override
+            public void onResponse(Call<ResponseWrapper> call, Response<ResponseWrapper> response) {
+                SearchResultsResponse searchResultsResponse = response.body().getResponse();
+                List<Article> articlesReturned = searchResultsResponse.getArticles();
+                if(pageNumber == 0){
+                    articles.clear();
+                }
+                articles.addAll(articlesReturned);
+                mTotalResults = searchResultsResponse.getMeta().getHits();
+                articleArrayAdapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onFailure(Call<ResponseWrapper> call, Throwable t) {
+
+            }
+        });
     }
     private void sendRequest(final int pageNumber, String query){
         mCurrentPage = pageNumber;
@@ -192,7 +254,7 @@ public class SearchActivity extends AppCompatActivity implements AbsListView.OnS
                     if(pageNumber == 0){
                         articles.clear();
                     }
-                    articles.addAll(Article.fromJSONArray(articleJsonResults));
+                    //articles.addAll(Article.fromJSONArray(articleJsonResults));
                     articleArrayAdapter.notifyDataSetChanged();
                 }catch(JSONException e){
                     e.printStackTrace();
@@ -220,5 +282,10 @@ public class SearchActivity extends AppCompatActivity implements AbsListView.OnS
             Log.d(TAG,"Condition is met");
             sendRequest(totalItemCount/10,mQuery);
         }
+    }
+
+    @Override
+    public void onFiltersSelected(SearchModel searchModel) {
+        mSearchModel = searchModel;
     }
 }

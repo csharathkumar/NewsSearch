@@ -2,62 +2,67 @@ package com.codepath.newssearch.models;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.util.Log;
+
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by Sharath on 7/26/16.
  */
 public class Article implements Parcelable {
-    String webUrl;
-    String headline;
-    String thumbNail;
+    private static final String TAG = Article.class.getSimpleName();
+    @SerializedName("web_url")
+    @Expose
+    private String webUrl;
+    @SerializedName("headline")
+    @Expose
+    private Headline headline;
+    @SerializedName("multimedia")
+    @Expose
+    private List<Multimedia> multimedia = new ArrayList<Multimedia>();
+
+    private String thumbNail = "";
 
     public String getWebUrl() {
         return webUrl;
     }
 
-    public String getHeadline() {
+    public void setWebUrl(String webUrl) {
+        this.webUrl = webUrl;
+    }
+
+    public Headline getHeadline() {
         return headline;
+    }
+
+    public void setHeadline(Headline headline) {
+        this.headline = headline;
+    }
+
+    public List<Multimedia> getMultimedia() {
+        return multimedia;
+    }
+
+    public void setMultimedia(List<Multimedia> multimedia) {
+        this.multimedia = multimedia;
     }
 
     public String getThumbNail() {
         return thumbNail;
     }
 
-
-    public Article(JSONObject jsonObject){
-        try{
-            this.webUrl = jsonObject.getString("web_url");
-            this.headline = jsonObject.getJSONObject("headline").getString("main");
-
-            JSONArray multimedia = jsonObject.getJSONArray("multimedia");
-            if(multimedia.length() > 0){
-                JSONObject multimediaObj = multimedia.getJSONObject(0);
-                this.thumbNail = "http://www.nytimes.com/"+multimediaObj.getString("url");
-            }else{
-                this.thumbNail = "";
-            }
-        }catch(JSONException e){
-
-        }
+    public void setThumbNail(String thumbNail) {
+        this.thumbNail = thumbNail;
     }
 
-    public static ArrayList<Article> fromJSONArray(JSONArray array){
-        ArrayList<Article> results = new ArrayList<>();
-        for(int i=0;i<array.length();i++){
-            try{
-                results.add(new Article(array.getJSONObject(i)));
-            }catch(JSONException e){
-                e.printStackTrace();
-            }
-        }
-        return results;
-    }
 
     @Override
     public int describeContents() {
@@ -67,13 +72,19 @@ public class Article implements Parcelable {
     @Override
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeString(this.webUrl);
-        dest.writeString(this.headline);
+        dest.writeParcelable(this.headline, flags);
+        dest.writeList(this.multimedia);
         dest.writeString(this.thumbNail);
+    }
+
+    public Article() {
     }
 
     protected Article(Parcel in) {
         this.webUrl = in.readString();
-        this.headline = in.readString();
+        this.headline = in.readParcelable(Headline.class.getClassLoader());
+        this.multimedia = new ArrayList<Multimedia>();
+        in.readList(this.multimedia, Multimedia.class.getClassLoader());
         this.thumbNail = in.readString();
     }
 

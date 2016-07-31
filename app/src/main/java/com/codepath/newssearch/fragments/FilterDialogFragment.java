@@ -1,15 +1,12 @@
-package com.codepath.newssearch.actvities;
+package com.codepath.newssearch.fragments;
 
-import android.app.Activity;
 import android.app.DatePickerDialog;
-import android.content.Intent;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
-import android.view.MenuItem;
+import android.support.annotation.Nullable;
+import android.support.v4.app.DialogFragment;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.DatePicker;
@@ -17,7 +14,6 @@ import android.widget.EditText;
 import android.widget.Spinner;
 
 import com.codepath.newssearch.R;
-import com.codepath.newssearch.fragments.DatePickerFragment;
 import com.codepath.newssearch.models.SearchModel;
 
 import java.text.SimpleDateFormat;
@@ -28,8 +24,10 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-public class FilterActivity extends AppCompatActivity implements DatePickerDialog.OnDateSetListener{
-
+/**
+ * Created by Sharath on 7/31/16.
+ */
+public class FilterDialogFragment extends DialogFragment implements DatePickerDialog.OnDateSetListener{
     @BindView(R.id.sortOrderSpinner)
     Spinner spinnerSortOrder;
     @BindView(R.id.etBeginDate)
@@ -44,17 +42,31 @@ public class FilterActivity extends AppCompatActivity implements DatePickerDialo
     Button btnSave;
 
     String beginDateSelected = "";
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_filter);
-        ButterKnife.bind(this);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setTitle("Select Filters");
 
-        etBeginDate.setActivated(false);
+    public interface FilterFragmentListener{
+        void onFiltersSelected(SearchModel searchModel);
+    }
+    public FilterDialogFragment(){
+
+    }
+
+    public static FilterDialogFragment newInstance(){
+        FilterDialogFragment filterDialogFragment = new FilterDialogFragment();
+        return filterDialogFragment;
+    }
+
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.content_filter, container);
+        ButterKnife.bind(this,view);
+        return view;
+
+    }
+
+    @Override
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
         etBeginDate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -65,20 +77,11 @@ public class FilterActivity extends AppCompatActivity implements DatePickerDialo
         btnSave.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent();
-                intent.putExtra(SearchActivity.EXTRA_SEARCH_MODEL,getSearchModel());
-                setResult(Activity.RESULT_OK,intent);
-                finish();
+                FilterFragmentListener listener = (FilterFragmentListener) getActivity();
+                listener.onFiltersSelected(getSearchModel());
+                dismiss();
             }
         });
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        if(item.getItemId() == android.R.id.home){
-            finish();
-        }
-        return super.onOptionsItemSelected(item);
     }
 
     private SearchModel getSearchModel(){
@@ -101,10 +104,10 @@ public class FilterActivity extends AppCompatActivity implements DatePickerDialo
         searchModel.setCategories(categories);
         return searchModel;
     }
-    // attach to an onclick handler to show the date picker
+
     public void showDatePickerDialog(View v) {
         DatePickerFragment newFragment = new DatePickerFragment();
-        newFragment.show(getSupportFragmentManager(), "datePicker");
+        newFragment.show(getChildFragmentManager(), "datePicker");
     }
 
     @Override

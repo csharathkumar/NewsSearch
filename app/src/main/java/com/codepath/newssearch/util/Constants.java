@@ -5,6 +5,7 @@ package com.codepath.newssearch.util;
  */
 public interface Constants {
     String API_KEY = "eac0ddf1cc21420ba6661e51b887507c";
-    String BASE_URL = "https://api.nytimes.com/svc/search/v2/articlesearch.json";
+    String BASE_URL = "https://api.nytimes.com/svc/search/v2/";
+    String NY_TIMES_BASE_URL = "http://www.nytimes.com/";
 
 }
