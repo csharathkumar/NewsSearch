@@ -1,9 +1,14 @@
 package com.codepath.newssearch.actvities;
 
 import android.app.Activity;
+import android.app.PendingIntent;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
+import android.support.customtabs.CustomTabsIntent;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -27,6 +32,7 @@ import android.widget.GridView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.bumptech.glide.load.resource.bitmap.GlideBitmapDrawable;
 import com.codepath.newssearch.R;
 import com.codepath.newssearch.adapters.ArticleArrayAdapter;
 import com.codepath.newssearch.adapters.ArticlesRecyclerAdapter;
@@ -102,13 +108,14 @@ public class SearchActivity extends AppCompatActivity implements FilterDialogFra
             @Override
             public void onItemClick(View itemView, int position) {
                 // create an intent to display the article
-                Intent intent = new Intent(getApplicationContext(),ArticleActivity.class);
+                //Intent intent = new Intent(getApplicationContext(),ArticleActivity.class);
                 //get article to display
                 Article article = articles.get(position);
                 //pass article into intent
-                intent.putExtra(ArticleActivity.EXTRA_ARTICLE,article);
+                //intent.putExtra(ArticleActivity.EXTRA_ARTICLE,article);
                 //launch the activity
-                startActivity(intent);
+                //startActivity(intent);
+                launchChromeCustomTab(article);
             }
         });
         rvArticles.setAdapter(articlesRecyclerAdapter);
@@ -310,5 +317,26 @@ public class SearchActivity extends AppCompatActivity implements FilterDialogFra
     @Override
     public void onFiltersSelected(SearchModel searchModel) {
         mSearchModel = searchModel;
+    }
+
+    private void launchChromeCustomTab(Article article){
+        String url = article.getWebUrl();
+        CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder();
+        builder.setToolbarColor(getResources().getColor(R.color.colorPrimary));
+        builder.setShowTitle(true);
+        String shareLabel = getString(R.string.share_label);
+        Bitmap icon = BitmapFactory.decodeResource(getResources(),android.R.drawable.ic_menu_share);
+        PendingIntent pendingIntent = createPendingShareIntent(url);
+        builder.setActionButton(icon, shareLabel, pendingIntent);
+        CustomTabsIntent customTabsIntent = builder.build();
+        customTabsIntent.launchUrl(SearchActivity.this, Uri.parse(url));
+    }
+
+    private PendingIntent createPendingShareIntent(String url) {
+        Intent actionIntent = new Intent(Intent.ACTION_SEND);
+        actionIntent.setType("text/plain");
+        actionIntent.putExtra(Intent.EXTRA_TEXT, url);
+        return PendingIntent.getActivity(
+                getApplicationContext(), 0, actionIntent, 0);
     }
 }

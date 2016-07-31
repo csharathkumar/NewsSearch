@@ -11,7 +11,6 @@ import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 import com.codepath.newssearch.R;
-import com.codepath.newssearch.actvities.ArticleActivity;
 import com.codepath.newssearch.models.Article;
 import com.codepath.newssearch.util.Constants;
 
@@ -61,7 +60,7 @@ public class ArticlesRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.V
         LayoutInflater inflater = LayoutInflater.from(context);
         RecyclerView.ViewHolder viewHolder;
         // Inflate the custom layout
-        if(viewType == 0){
+        if(viewType == VIEW_TYPE_WITH_IMAGE){
             View articleView = inflater.inflate(R.layout.item_article_rv, parent, false);
             viewHolder = new ImageViewHolder(articleView);
         }else{
