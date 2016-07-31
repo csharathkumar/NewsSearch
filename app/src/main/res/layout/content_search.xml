@@ -39,5 +39,12 @@
         android:id="@+id/gvResults"
         android:layout_below="@+id/btnSearch"
         android:layout_centerHorizontal="true"
+        android:visibility="gone"
         android:numColumns="4" />
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/rvArticles"
+        android:layout_below="@+id/btnSearch"
+        android:layout_centerHorizontal="true"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
 </RelativeLayout>

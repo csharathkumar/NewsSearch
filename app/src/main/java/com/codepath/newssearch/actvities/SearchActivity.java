@@ -9,7 +9,11 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
+import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
@@ -25,6 +29,7 @@ import android.widget.Toast;
 
 import com.codepath.newssearch.R;
 import com.codepath.newssearch.adapters.ArticleArrayAdapter;
+import com.codepath.newssearch.adapters.ArticlesRecyclerAdapter;
 import com.codepath.newssearch.fragments.FilterDialogFragment;
 import com.codepath.newssearch.models.Article;
 import com.codepath.newssearch.models.ResponseWrapper;
@@ -33,8 +38,10 @@ import com.codepath.newssearch.models.SearchResultsResponse;
 import com.codepath.newssearch.net.ApiClient;
 import com.codepath.newssearch.net.ApiInterface;
 import com.codepath.newssearch.util.Constants;
+import com.codepath.newssearch.util.EndlessRecyclerViewScrollListener;
 import com.codepath.newssearch.util.EndlessScrollListener;
 import com.codepath.newssearch.util.NetworkUtils;
+import com.codepath.newssearch.util.SpacesItemDecoration;
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.JsonHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
@@ -62,8 +69,8 @@ public class SearchActivity extends AppCompatActivity implements FilterDialogFra
     public static final String TAG = SearchActivity.class.getSimpleName();
 
     @BindView(R.id.etQuery) EditText etQuery;
-    @BindView(R.id.gvResults) GridView gvResults;
     @BindView(R.id.btnSearch) Button btnSearch;
+    @BindView(R.id.rvArticles) RecyclerView rvArticles;
     @BindView(R.id.toolbar) Toolbar toolbar;
     @BindView(R.id.coordinatorLayout) CoordinatorLayout coordinatorLayout;
     Snackbar snackbar;
@@ -73,6 +80,7 @@ public class SearchActivity extends AppCompatActivity implements FilterDialogFra
     int mCurrentPage;
     ArrayList<Article> articles;
     ArticleArrayAdapter articleArrayAdapter;
+    ArticlesRecyclerAdapter articlesRecyclerAdapter;
     SearchModel mSearchModel;
 
     @Override
@@ -87,33 +95,37 @@ public class SearchActivity extends AppCompatActivity implements FilterDialogFra
     }
 
     public void setUpViews(){
-
         articles = new ArrayList<>();
         articleArrayAdapter = new ArticleArrayAdapter(this,articles);
-        gvResults.setAdapter(articleArrayAdapter);
-        gvResults.setOnScrollListener(new EndlessScrollListener() {
+        articlesRecyclerAdapter = new ArticlesRecyclerAdapter(this,articles);
+        articlesRecyclerAdapter.setOnItemClickListener(new ArticlesRecyclerAdapter.OnItemClickListener(){
             @Override
-            public boolean onLoadMore(int page, int totalItemsCount) {
-                // Triggered only when new data needs to be appended to the list
-                // Add whatever code is needed to append new items to your AdapterView
-                sendRequestUsingRetrofit(page,mQuery);
-                // or customLoadMoreDataFromApi(totalItemsCount);
-                return true; // ONLY if more data is actually being loaded; false otherwise.
-                }
-        });
-        gvResults.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            public void onItemClick(View itemView, int position) {
                 // create an intent to display the article
                 Intent intent = new Intent(getApplicationContext(),ArticleActivity.class);
                 //get article to display
-                Article article = (Article) parent.getItemAtPosition(position);
+                Article article = articles.get(position);
                 //pass article into intent
                 intent.putExtra(ArticleActivity.EXTRA_ARTICLE,article);
                 //launch the activity
                 startActivity(intent);
             }
         });
+        rvArticles.setAdapter(articlesRecyclerAdapter);
+        SpacesItemDecoration spacesItemDecoration = new SpacesItemDecoration(16);
+        rvArticles.addItemDecoration(spacesItemDecoration);
+        GridLayoutManager gridLayoutManager = new GridLayoutManager(this,3);
+        StaggeredGridLayoutManager staggeredGridLayoutManager=new StaggeredGridLayoutManager(3,1);
+        staggeredGridLayoutManager.setGapStrategy(StaggeredGridLayoutManager.GAP_HANDLING_NONE);
+        rvArticles.setLayoutManager(staggeredGridLayoutManager);
+
+        rvArticles.setOnScrollListener(new EndlessRecyclerViewScrollListener(staggeredGridLayoutManager) {
+            @Override
+            public void onLoadMore(int page, int totalItemsCount) {
+                sendRequestUsingRetrofit(page,mQuery);
+            }
+        });
+
     }
 
     @Override
@@ -227,7 +239,7 @@ public class SearchActivity extends AppCompatActivity implements FilterDialogFra
                     }
                     articles.addAll(articlesReturned);
                     mTotalResults = searchResultsResponse.getMeta().getHits();
-                    articleArrayAdapter.notifyDataSetChanged();
+                    articlesRecyclerAdapter.notifyDataSetChanged();
                 }
 
                 @Override
