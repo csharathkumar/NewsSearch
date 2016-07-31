@@ -2,7 +2,9 @@ package com.codepath.newssearch.actvities;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.view.MenuItemCompat;
@@ -18,6 +20,7 @@ import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.GridView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.codepath.newssearch.R;
@@ -31,6 +34,7 @@ import com.codepath.newssearch.net.ApiClient;
 import com.codepath.newssearch.net.ApiInterface;
 import com.codepath.newssearch.util.Constants;
 import com.codepath.newssearch.util.EndlessScrollListener;
+import com.codepath.newssearch.util.NetworkUtils;
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.JsonHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
@@ -52,20 +56,21 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class SearchActivity extends AppCompatActivity implements AbsListView.OnScrollListener, FilterDialogFragment.FilterFragmentListener {
+public class SearchActivity extends AppCompatActivity implements FilterDialogFragment.FilterFragmentListener {
     public static final String EXTRA_SEARCH_MODEL = "search_criteria_model";
     public static final int GET_SEARCH_CRITERIA_REQUEST = 121;
     public static final String TAG = SearchActivity.class.getSimpleName();
-
-    int mTotalResults;
-    int mCurrentPage;
 
     @BindView(R.id.etQuery) EditText etQuery;
     @BindView(R.id.gvResults) GridView gvResults;
     @BindView(R.id.btnSearch) Button btnSearch;
     @BindView(R.id.toolbar) Toolbar toolbar;
-    String mQuery;
+    @BindView(R.id.coordinatorLayout) CoordinatorLayout coordinatorLayout;
+    Snackbar snackbar;
 
+    String mQuery;
+    int mTotalResults;
+    int mCurrentPage;
     ArrayList<Article> articles;
     ArticleArrayAdapter articleArrayAdapter;
     SearchModel mSearchModel;
@@ -75,7 +80,6 @@ public class SearchActivity extends AppCompatActivity implements AbsListView.OnS
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_search);
         ButterKnife.bind(this);
-        //Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setTitle(R.string.app_name);
         setUpViews();
@@ -87,7 +91,6 @@ public class SearchActivity extends AppCompatActivity implements AbsListView.OnS
         articles = new ArrayList<>();
         articleArrayAdapter = new ArticleArrayAdapter(this,articles);
         gvResults.setAdapter(articleArrayAdapter);
-        //gvResults.setOnScrollListener(this);
         gvResults.setOnScrollListener(new EndlessScrollListener() {
             @Override
             public boolean onLoadMore(int page, int totalItemsCount) {
@@ -120,10 +123,7 @@ public class SearchActivity extends AppCompatActivity implements AbsListView.OnS
         filterItem.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
             @Override
             public boolean onMenuItemClick(MenuItem item) {
-                /*Toast.makeText(getApplicationContext(),"Filter item clicked",Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(getApplicationContext(),FilterActivity.class);
-                startActivityForResult(intent,GET_SEARCH_CRITERIA_REQUEST);*/
-                //Call the filter dialog
+                //show the filter dialog
                 FilterDialogFragment filterDialogFragment = FilterDialogFragment.newInstance();
                 filterDialogFragment.show(getSupportFragmentManager(),"Filter Dialog");
                 return true;
@@ -165,52 +165,80 @@ public class SearchActivity extends AppCompatActivity implements AbsListView.OnS
         }
         super.onActivityResult(requestCode, resultCode, data);
     }
+    private void showSnackBar(final int pageNumber, final String query){
+        snackbar = Snackbar
+                .make(coordinatorLayout, "No internet connection!", Snackbar.LENGTH_INDEFINITE)
+                .setAction("RETRY", new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        sendRequestUsingRetrofit(pageNumber,query);
+                    }
+                });
 
+        // Changing message text color
+        snackbar.setActionTextColor(Color.RED);
+
+        // Changing action button text color
+        View sbView = snackbar.getView();
+        TextView textView = (TextView) sbView.findViewById(android.support.design.R.id.snackbar_text);
+        textView.setTextColor(Color.YELLOW);
+        snackbar.show();
+    }
     public void onArticleSearch(View view) {
         mQuery = etQuery.getText().toString();
         sendRequestUsingRetrofit(0,mQuery);
     }
     private void sendRequestUsingRetrofit(final int pageNumber, String query){
-        String beginDate = null;
-        String categories = null;
-        String sortOrder = null;
-        if(mSearchModel != null){
-            if(mSearchModel.getBeginDate() != null){
-                beginDate = mSearchModel.getBeginDate();
-            }
-            if(mSearchModel.getSortOrder() != null){
-                sortOrder = mSearchModel.getSortOrder();
-            }
-            List<String> categoriesList = mSearchModel.getCategories();
-            if(!categoriesList.isEmpty()){
-                categories = "news_desk:(";
-                for(int i=0;i<categoriesList.size()-1;i++){
-                    categories = categories+'"'+categoriesList.get(i)+'"'+" ";
+        if(NetworkUtils.isOnline()){
+            if(snackbar != null){
+                if(snackbar.isShown()){
+                    snackbar.dismiss();
                 }
-                categories = categories+'"'+categoriesList.get(categoriesList.size()-1)+'"'+")";
             }
+            String beginDate = null;
+            String categories = null;
+            String sortOrder = null;
+            if(mSearchModel != null){
+                if(mSearchModel.getBeginDate() != null){
+                    beginDate = mSearchModel.getBeginDate();
+                }
+                if(mSearchModel.getSortOrder() != null){
+                    sortOrder = mSearchModel.getSortOrder();
+                }
+                List<String> categoriesList = mSearchModel.getCategories();
+                if(!categoriesList.isEmpty()){
+                    categories = "news_desk:(";
+                    for(int i=0;i<categoriesList.size()-1;i++){
+                        categories = categories+'"'+categoriesList.get(i)+'"'+" ";
+                    }
+                    categories = categories+'"'+categoriesList.get(categoriesList.size()-1)+'"'+")";
+                }
+            }
+            ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+            Call<ResponseWrapper> searchResultsResponseCall =
+                    apiInterface.getArticles(Constants.API_KEY,query,String.valueOf(pageNumber),sortOrder,beginDate,categories);
+            searchResultsResponseCall.enqueue(new Callback<ResponseWrapper>() {
+                @Override
+                public void onResponse(Call<ResponseWrapper> call, Response<ResponseWrapper> response) {
+                    SearchResultsResponse searchResultsResponse = response.body().getResponse();
+                    List<Article> articlesReturned = searchResultsResponse.getArticles();
+                    if(pageNumber == 0){
+                        articles.clear();
+                    }
+                    articles.addAll(articlesReturned);
+                    mTotalResults = searchResultsResponse.getMeta().getHits();
+                    articleArrayAdapter.notifyDataSetChanged();
+                }
+
+                @Override
+                public void onFailure(Call<ResponseWrapper> call, Throwable t) {
+                    Log.e(TAG,"Failed to fetch results for the given search query.");
+                }
+            });
+        }else{
+            showSnackBar(pageNumber, query);
         }
-        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
-        Call<ResponseWrapper> searchResultsResponseCall =
-                apiInterface.getArticles(Constants.API_KEY,query,String.valueOf(pageNumber),sortOrder,beginDate,categories);
-        searchResultsResponseCall.enqueue(new Callback<ResponseWrapper>() {
-            @Override
-            public void onResponse(Call<ResponseWrapper> call, Response<ResponseWrapper> response) {
-                SearchResultsResponse searchResultsResponse = response.body().getResponse();
-                List<Article> articlesReturned = searchResultsResponse.getArticles();
-                if(pageNumber == 0){
-                    articles.clear();
-                }
-                articles.addAll(articlesReturned);
-                mTotalResults = searchResultsResponse.getMeta().getHits();
-                articleArrayAdapter.notifyDataSetChanged();
-            }
 
-            @Override
-            public void onFailure(Call<ResponseWrapper> call, Throwable t) {
-
-            }
-        });
     }
     private void sendRequest(final int pageNumber, String query){
         mCurrentPage = pageNumber;
@@ -267,23 +295,6 @@ public class SearchActivity extends AppCompatActivity implements AbsListView.OnS
             }
         });
     }
-    @Override
-    public void onScrollStateChanged(AbsListView view, int scrollState) {
-
-    }
-
-    @Override
-    public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-        Log.d(TAG,"In onScroll method");
-        Log.d(TAG,"First visible item - "+firstVisibleItem);
-        Log.d(TAG,"Visible Item count - "+visibleItemCount);
-        Log.d(TAG,"Total item count - "+totalItemCount);
-        if(visibleItemCount != 0 && (totalItemCount == (firstVisibleItem + visibleItemCount))){
-            Log.d(TAG,"Condition is met");
-            sendRequest(totalItemCount/10,mQuery);
-        }
-    }
-
     @Override
     public void onFiltersSelected(SearchModel searchModel) {
         mSearchModel = searchModel;
