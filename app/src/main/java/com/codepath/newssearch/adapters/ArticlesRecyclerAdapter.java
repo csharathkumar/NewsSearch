@@ -10,9 +10,11 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.codepath.newssearch.R;
 import com.codepath.newssearch.models.Article;
 import com.codepath.newssearch.util.Constants;
+import com.squareup.picasso.Picasso;
 
 import java.util.List;
 
@@ -79,11 +81,13 @@ public class ArticlesRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.V
             imageViewHolder.tvTitle.setText(article.getHeadline().getMain());
             imageViewHolder.ivImage.setImageResource(0);
             if(article.getMultimedia() != null && !article.getMultimedia().isEmpty()){
-                Glide.with(getContext())
+                Glide.with(mContext)
                         .load(Constants.NY_TIMES_BASE_URL+article.getMultimedia().get(0).getUrl())
-                        //.override(75,75)
                         .centerCrop()
-                        .placeholder(R.mipmap.ic_launcher)
+                        .dontAnimate()
+                        .override(300,300)
+                        .diskCacheStrategy(DiskCacheStrategy.ALL)
+                        .placeholder(R.drawable.ic_image)
                         .into(imageViewHolder.ivImage);
             }
         }else{
@@ -106,11 +110,8 @@ public class ArticlesRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.V
             super(itemView);
             ivImage = (ImageView) itemView.findViewById(R.id.ivImage);
             tvTitle = (TextView) itemView.findViewById(R.id.tvTitle);
-            itemView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    listener.onItemClick(itemView,getLayoutPosition());
-                }
+            itemView.setOnClickListener(v->{
+               listener.onItemClick(itemView,getLayoutPosition());
             });
         }
 
@@ -122,11 +123,8 @@ public class ArticlesRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.V
         public ViewHolder(final View itemView){
             super(itemView);
             tvTitle = (TextView) itemView.findViewById(R.id.tvTitle);
-            itemView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    listener.onItemClick(itemView,getLayoutPosition());
-                }
+            itemView.setOnClickListener(v-> {
+                listener.onItemClick(itemView,getLayoutPosition());
             });
         }
 

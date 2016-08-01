@@ -29,6 +29,7 @@ import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.GridView;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -97,26 +98,28 @@ public class SearchActivity extends AppCompatActivity implements FilterDialogFra
         setSupportActionBar(toolbar);
         getSupportActionBar().setTitle(R.string.app_name);
         setUpViews();
-        etQuery.setText("android");
+        etQuery.setText("Bernie Sanders");
     }
 
     public void setUpViews(){
+        //Retro Lambda expression.
+        btnSearch.setOnClickListener(v -> {
+            mQuery = etQuery.getText().toString();
+            sendRequestUsingRetrofit(0,mQuery);
+        });
         articles = new ArrayList<>();
         articleArrayAdapter = new ArticleArrayAdapter(this,articles);
         articlesRecyclerAdapter = new ArticlesRecyclerAdapter(this,articles);
-        articlesRecyclerAdapter.setOnItemClickListener(new ArticlesRecyclerAdapter.OnItemClickListener(){
-            @Override
-            public void onItemClick(View itemView, int position) {
-                // create an intent to display the article
-                //Intent intent = new Intent(getApplicationContext(),ArticleActivity.class);
-                //get article to display
-                Article article = articles.get(position);
-                //pass article into intent
-                //intent.putExtra(ArticleActivity.EXTRA_ARTICLE,article);
-                //launch the activity
-                //startActivity(intent);
-                launchChromeCustomTab(article);
-            }
+        articlesRecyclerAdapter.setOnItemClickListener((itemView, position) -> {
+            // create an intent to display the article
+            Intent intent = new Intent(getApplicationContext(),ArticleActivity.class);
+            //get article to display
+            Article article = articles.get(position);
+            //pass article into intent
+            intent.putExtra(ArticleActivity.EXTRA_ARTICLE,article);
+            //launch the activity
+            startActivity(intent);
+            //launchChromeCustomTab(article);
         });
         rvArticles.setAdapter(articlesRecyclerAdapter);
         SpacesItemDecoration spacesItemDecoration = new SpacesItemDecoration(16);
@@ -125,31 +128,37 @@ public class SearchActivity extends AppCompatActivity implements FilterDialogFra
         StaggeredGridLayoutManager staggeredGridLayoutManager=new StaggeredGridLayoutManager(3,1);
         staggeredGridLayoutManager.setGapStrategy(StaggeredGridLayoutManager.GAP_HANDLING_NONE);
         rvArticles.setLayoutManager(staggeredGridLayoutManager);
-
         rvArticles.setOnScrollListener(new EndlessRecyclerViewScrollListener(staggeredGridLayoutManager) {
             @Override
             public void onLoadMore(int page, int totalItemsCount) {
                 sendRequestUsingRetrofit(page,mQuery);
             }
         });
-
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.activity_search,menu);
         MenuItem filterItem = menu.findItem(R.id.filter);
-        filterItem.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-            @Override
-            public boolean onMenuItemClick(MenuItem item) {
-                //show the filter dialog
-                FilterDialogFragment filterDialogFragment = FilterDialogFragment.newInstance();
-                filterDialogFragment.show(getSupportFragmentManager(),"Filter Dialog");
-                return true;
-            }
+        filterItem.setOnMenuItemClickListener(item -> {
+            //show the filter dialog
+            FilterDialogFragment filterDialogFragment = FilterDialogFragment.newInstance();
+            filterDialogFragment.show(getSupportFragmentManager(),"Filter Dialog");
+            return true;
         });
         final MenuItem searchItem = menu.findItem(R.id.action_search);
         final SearchView searchView = (SearchView) MenuItemCompat.getActionView(searchItem);
+        // Use a custom search icon for the SearchView in AppBar
+        //int searchImgId = android.support.v7.appcompat.R.id.search_button;
+        /*ImageView v = (ImageView) searchView.findViewById(searchImgId);
+        v.setImageResource(android.R.drawable.ic_menu_search);*/
+        // Customize searchview text and hint colors
+        int searchEditId = android.support.v7.appcompat.R.id.search_src_text;
+        EditText et = (EditText) searchView.findViewById(searchEditId);
+        et.setTextColor(Color.WHITE);
+        et.setHintTextColor(Color.WHITE);
+        et.setHint(R.string.search_button);
+
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
@@ -187,12 +196,9 @@ public class SearchActivity extends AppCompatActivity implements FilterDialogFra
     private void showSnackBar(final int pageNumber, final String query){
         snackbar = Snackbar
                 .make(coordinatorLayout, "No internet connection!", Snackbar.LENGTH_INDEFINITE)
-                .setAction("RETRY", new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        sendRequestUsingRetrofit(pageNumber,query);
-                    }
-                });
+                .setAction("RETRY", view->
+                        sendRequestUsingRetrofit(pageNumber,query));
+
 
         // Changing message text color
         snackbar.setActionTextColor(Color.RED);
@@ -203,10 +209,7 @@ public class SearchActivity extends AppCompatActivity implements FilterDialogFra
         textView.setTextColor(Color.YELLOW);
         snackbar.show();
     }
-    public void onArticleSearch(View view) {
-        mQuery = etQuery.getText().toString();
-        sendRequestUsingRetrofit(0,mQuery);
-    }
+
     private void sendRequestUsingRetrofit(final int pageNumber, String query){
         if(NetworkUtils.isOnline()){
             if(snackbar != null){

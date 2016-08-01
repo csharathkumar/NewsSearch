@@ -67,20 +67,14 @@ public class FilterDialogFragment extends DialogFragment implements DatePickerDi
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        etBeginDate.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+        etBeginDate.setOnClickListener(v -> {
                 showDatePickerDialog(v);
-            }
         });
 
-        btnSave.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+        btnSave.setOnClickListener(v->{
                 FilterFragmentListener listener = (FilterFragmentListener) getActivity();
                 listener.onFiltersSelected(getSearchModel());
                 dismiss();
-            }
         });
     }
 

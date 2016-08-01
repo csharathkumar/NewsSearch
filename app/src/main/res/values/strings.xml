@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">News Search</string>
+    <string name="app_name">NY Times Search</string>
     <string name="title_activity_search">SearchActivity</string>
     <string name="search_edit_text_hint">Enter search query</string>
     <string name="search_button">Search</string>

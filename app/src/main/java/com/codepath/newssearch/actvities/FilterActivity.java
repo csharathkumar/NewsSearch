@@ -55,21 +55,15 @@ public class FilterActivity extends AppCompatActivity implements DatePickerDialo
         getSupportActionBar().setTitle("Select Filters");
 
         etBeginDate.setActivated(false);
-        etBeginDate.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+        etBeginDate.setOnClickListener(v->{
                 showDatePickerDialog(v);
-            }
         });
 
-        btnSave.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+        btnSave.setOnClickListener(v->{
                 Intent intent = new Intent();
                 intent.putExtra(SearchActivity.EXTRA_SEARCH_MODEL,getSearchModel());
                 setResult(Activity.RESULT_OK,intent);
                 finish();
-            }
         });
     }
 

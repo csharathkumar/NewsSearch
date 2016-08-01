@@ -5,6 +5,7 @@
     android:id="@+id/card_view"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
+    android:layout_margin="2dp"
     card_view:cardCornerRadius="4dp">
     <LinearLayout
         android:orientation="vertical"
@@ -12,11 +13,12 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content">
 
-
+        <!--android:maxLines="3"
+        android:ellipsize="end"-->
         <TextView android:id="@+id/tvTitle"
-            android:maxLines="3"
-            android:ellipsize="end"
+            android:padding="2dp"
             tools:text="Test Article Title"
+            android:textColor="@color/colorPrimaryText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
