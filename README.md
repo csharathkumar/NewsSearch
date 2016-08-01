@@ -35,13 +35,13 @@ Completed advanced user stories:
  
  * [x] Optional: Included Chrome Custom tabs instead of Webview.
 
- 
-Notes:
 
+## Video Walkthrough
 
-Walkthrough of all user stories:
-![Alt text](nytimes_news_search.gif?raw=true “Online Mode”)
-![Alt text](nytimes_news_search_offline.gif?raw=true “Offline mode”)
+Here's a walkthrough of implemented user stories:
+
+![Alt text](nytimes_news_search.gif?raw=true "Online Mode")
+![Alt text](nytimes_news_search_offline.gif?raw=true "Offline Mode")
 
 
 GIF created with [LiceCap](http://www.cockos.com/licecap/).
