@@ -41,6 +41,6 @@ Notes:
 
 Walkthrough of all user stories:
 
-![Video Walkthrough](anim_rotten_tomatoes.gif)
+![Video Walkthrough](nytimes_news_search.gif)
 
 GIF created with [LiceCap](http://www.cockos.com/licecap/).

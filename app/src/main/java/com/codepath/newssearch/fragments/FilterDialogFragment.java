@@ -15,6 +15,7 @@ import android.widget.Spinner;
 
 import com.codepath.newssearch.R;
 import com.codepath.newssearch.models.SearchModel;
+import com.codepath.newssearch.util.UiUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -68,7 +69,8 @@ public class FilterDialogFragment extends DialogFragment implements DatePickerDi
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         etBeginDate.setOnClickListener(v -> {
-                showDatePickerDialog(v);
+            UiUtils.hideSoftKeyboard(getActivity(),v);
+            showDatePickerDialog(v);
         });
 
         btnSave.setOnClickListener(v->{

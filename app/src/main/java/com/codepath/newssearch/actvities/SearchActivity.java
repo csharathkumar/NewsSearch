@@ -24,6 +24,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.Button;
@@ -49,6 +50,7 @@ import com.codepath.newssearch.util.EndlessRecyclerViewScrollListener;
 import com.codepath.newssearch.util.EndlessScrollListener;
 import com.codepath.newssearch.util.NetworkUtils;
 import com.codepath.newssearch.util.SpacesItemDecoration;
+import com.codepath.newssearch.util.UiUtils;
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.JsonHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
@@ -98,7 +100,6 @@ public class SearchActivity extends AppCompatActivity implements FilterDialogFra
         setSupportActionBar(toolbar);
         getSupportActionBar().setTitle(R.string.app_name);
         setUpViews();
-        etQuery.setText("Bernie Sanders");
     }
 
     public void setUpViews(){
@@ -106,6 +107,8 @@ public class SearchActivity extends AppCompatActivity implements FilterDialogFra
         btnSearch.setOnClickListener(v -> {
             mQuery = etQuery.getText().toString();
             sendRequestUsingRetrofit(0,mQuery);
+            etQuery.setText("");
+            UiUtils.hideSoftKeyboard(getApplicationContext(),v);
         });
         articles = new ArrayList<>();
         articleArrayAdapter = new ArticleArrayAdapter(this,articles);
