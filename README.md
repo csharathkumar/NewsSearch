@@ -40,10 +40,8 @@ Notes:
 
 
 Walkthrough of all user stories:
-
-![Video Walkthrough](nytimes_news_search.gif)
-![Offline demo](nytimes_news_search_offline.gif)
-
+![Alt text](nytimes_news_search.gif?raw=true “Online Mode”)
+![Alt text](nytimes_news_search_offline.gif?raw=true “Offline mode”)
 
 
 GIF created with [LiceCap](http://www.cockos.com/licecap/).
